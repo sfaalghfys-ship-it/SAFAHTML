@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>معبر | نظام دعم القرار الاستباقي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B1622;
+    --panel:#131F2E;
+    --panel-2:#182838;
+    --panel-3:#1E3143;
+    --border:#26394D;
+    --border-soft:#1F2F40;
+    --text:#EAF1F7;
+    --text-dim:#8DA1B5;
+    --text-faint:#546A80;
+    --amber:#F2A93B;
+    --amber-dim:#3A2C15;
+    --green:#4CAF7D;
+    --green-dim:#16281F;
+    --red:#E2574C;
+    --red-dim:#341E1C;
+    --blue:#5B9BD5;
+    --blue-dim:#152534;
+    --violet:#9B8AE0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ height:100%; }
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    font-size:14.5px;
+  }
+  .mono{ font-family:'IBM Plex Mono', monospace; direction:ltr; unicode-bidi:embed; }
+  a{ color:inherit; text-decoration:none; }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--border); border-radius:8px; }
+
+  /* ===== Shell ===== */
+  .shell{ display:flex; min-height:100vh; }
+  .sidebar{
+    width:232px; flex:none;
+    background:var(--panel);
+    border-inline-start:1px solid var(--border-soft);
+    display:flex; flex-direction:column;
+    padding:18px 14px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; padding:6px 8px 20px; }
+  .brand-mark{
+    width:32px; height:32px; border-radius:8px;
+    background:linear-gradient(135deg, var(--amber), #C77E1F);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:14px; color:#1A1206; flex:none;
+  }
+  .brand-name{ font-weight:700; font-size:16px; }
+  .brand-sub{ font-size:10.5px; color:var(--text-dim); }
+
+  .nav-group-label{ font-size:11px; color:var(--text-faint); padding:14px 10px 6px; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:8px;
+    color:var(--text-dim); font-size:13.5px; font-weight:500;
+    cursor:pointer; margin-bottom:2px;
+    border-inline-end:2px solid transparent;
+    transition:.15s ease;
+  }
+  .nav-item .ic{ width:18px; text-align:center; font-size:15px; }
+  .nav-item:hover{ background:var(--panel-2); color:var(--text); }
+  .nav-item.active{ background:var(--panel-2); color:var(--text); border-inline-end-color:var(--amber); }
+  .nav-item .badge{
+    margin-inline-start:auto; background:var(--red); color:#fff;
+    font-size:10px; font-family:'IBM Plex Mono',monospace;
+    padding:1px 6px; border-radius:9px;
+  }
+
+  .sidebar-foot{ margin-top:auto; padding:12px 10px; border-top:1px solid var(--border-soft); }
+  .op-user{ display:flex; align-items:center; gap:9px; }
+  .op-avatar{ width:30px; height:30px; border-radius:50%; background:var(--panel-3); display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .op-name{ font-size:12.5px; font-weight:600; }
+  .op-role{ font-size:10.5px; color:var(--text-dim); }
+
+  /* ===== Main ===== */
+  .main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 26px; border-bottom:1px solid var(--border-soft);
+    flex-wrap:wrap; gap:10px;
+  }
+  .topbar h1{ font-size:17px; font-weight:700; }
+  .topbar .sub{ font-size:12px; color:var(--text-dim); margin-top:2px; font-weight:400; }
+  .topbar-right{ display:flex; align-items:center; gap:14px; font-size:12.5px; color:var(--text-dim); }
+  .status-pill{
+    display:flex; align-items:center; gap:7px;
+    background:var(--amber-dim); border:1px solid rgba(242,169,59,.35); color:var(--amber);
+    padding:6px 12px; border-radius:20px; font-size:12.5px; font-weight:600;
+  }
+  .status-dot{ width:7px; height:7px; border-radius:50%; background:var(--amber); animation:pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;} 50%{opacity:.5;} }
+
+  .view{ display:none; padding:22px 26px 40px; }
+  .view.active{ display:block; }
+
+  .card{ background:var(--panel); border:1px solid var(--border-soft); border-radius:12px; padding:20px; margin-bottom:16px; }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .card-title{ font-size:14px; font-weight:700; }
+  .card-title span{ color:var(--text-dim); font-weight:500; font-size:11.5px; }
+
+  /* ===== KPI row ===== */
+  .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px; }
+  @media(max-width:900px){ .kpis{ grid-template-columns:repeat(2,1fr);} }
+  .kpi{ background:var(--panel); border:1px solid var(--border-soft); border-radius:12px; padding:16px 18px; }
+  .kpi-label{ font-size:11.5px; color:var(--text-dim); margin-bottom:8px; }
+  .kpi-val{ font-family:'IBM Plex Mono',monospace; font-size:23px; font-weight:600; }
+  .kpi-delta{ font-size:11px; margin-top:6px; }
+  .kpi-delta.up{ color:var(--red); }
+  .kpi-delta.down{ color:var(--green); }
+  .kpi-delta.flat{ color:var(--text-dim); }
+
+  .grid2{ display:grid; grid-template-columns:1.15fr .85fr; gap:16px; }
+  @media(max-width:920px){ .grid2{ grid-template-columns:1fr; } }
+
+  /* ===== Gates heatmap ===== */
+  .gate-legend{ display:flex; gap:14px; font-size:11px; color:var(--text-dim); margin-bottom:14px; }
+  .gate-legend i{ display:inline-block; width:9px; height:9px; border-radius:2px; margin-inline-start:5px; vertical-align:middle; }
+  .gates{ display:grid; grid-template-columns:repeat(6,1fr); gap:8px; }
+  .gate{ aspect-ratio:1; border-radius:8px; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; border:1px solid transparent; position:relative; cursor:default; }
+  .gate.ok{ background:var(--green-dim); color:var(--green); border-color:rgba(76,175,125,.25); }
+  .gate.risk{ background:var(--red-dim); color:var(--red); border-color:rgba(226,87,76,.4); animation:glow 2s ease-in-out infinite; }
+  @keyframes glow{ 0%,100%{ box-shadow:0 0 0 0 rgba(226,87,76,.25);} 50%{ box-shadow:0 0 0 6px rgba(226,87,76,0);} }
+  .gate small{ font-size:8.5px; opacity:.75; margin-top:2px; font-family:'IBM Plex Sans Arabic',sans-serif; }
+
+  .predict-box{ background:var(--panel-2); border:1px solid var(--border-soft); border-radius:10px; padding:16px; margin-top:16px; display:flex; align-items:center; gap:16px; }
+  .predict-ring{ position:relative; width:58px; height:58px; flex:none; }
+  .predict-ring .val{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--amber); }
+  .predict-text{ font-size:13px; }
+  .predict-text b{ color:var(--amber); }
+  .predict-conf{ font-size:11px; color:var(--text-dim); margin-top:4px; }
+
+  /* ===== chart ===== */
+  .chart-wrap{ position:relative; }
+  .chart-legend{ display:flex; gap:16px; font-size:11.5px; color:var(--text-dim); margin-bottom:10px; }
+  .chart-legend i{ display:inline-block; width:14px; height:2px; margin-inline-end:6px; vertical-align:middle; }
+  .chart-ylabels{ position:absolute; right:0; top:0; bottom:24px; display:flex; flex-direction:column; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-faint); }
+
+  /* ===== recommendation ===== */
+  .reco{ background:linear-gradient(160deg, var(--panel-2), var(--panel)); border:1px solid rgba(242,169,59,.3); border-radius:12px; padding:22px; margin-bottom:16px; }
+  .reco-eyebrow{ font-size:11.5px; color:var(--amber); font-weight:600; margin-bottom:8px; }
+  .reco-text{ font-size:16.5px; font-weight:600; line-height:1.6; margin-bottom:6px; }
+  .reco-time{ font-size:12px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; direction:ltr; display:inline-block; }
+
+  .cause-row{ display:flex; gap:10px; align-items:flex-start; font-size:13px; color:var(--text-dim); margin-bottom:10px; }
+  .cause-row .num{ flex:none; width:20px; height:20px; border-radius:50%; background:var(--panel-3); color:var(--text-dim); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:10.5px; }
+  .cause-row b{ color:var(--text); }
+  .flight-tags{ display:flex; gap:8px; margin:10px 0 4px; }
+  .flight-tag{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; background:var(--panel-3); border:1px solid var(--border); border-radius:6px; padding:4px 9px; color:var(--blue); }
+
+  .whatif{ margin-top:18px; }
+  .whatif-row{ display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+  .whatif-label{ width:96px; flex:none; font-size:12px; color:var(--text-dim); }
+  .whatif-bar-track{ flex:1; height:10px; background:var(--panel-3); border-radius:6px; overflow:hidden; }
+  .whatif-bar{ height:100%; border-radius:6px; transition:width 1s cubic-bezier(.4,0,.2,1); }
+  .whatif-val{ width:52px; flex:none; text-align:left; font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600; }
+
+  .decisions{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  .btn{ flex:1; min-width:140px; padding:12px 14px; border-radius:9px; border:1px solid var(--border); background:var(--panel-2); color:var(--text);
+    font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:.15s ease; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-approve{ background:var(--green); color:#0B2318; border-color:var(--green); }
+  .btn-approve:hover{ background:#5CC28E; }
+  .btn-edit:hover{ background:var(--panel-3); }
+  .btn-reject{ color:var(--red); border-color:rgba(226,87,76,.4); }
+  .btn-reject:hover{ background:var(--red-dim); }
+
+  .edit-panel,.reject-panel{ display:none; margin-top:14px; padding-top:14px; border-top:1px solid var(--border-soft); }
+  .edit-panel.show,.reject-panel.show{ display:block; }
+  .edit-field{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12.5px; color:var(--text-dim); }
+  .edit-field input{ width:90px; background:var(--panel-3); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:'IBM Plex Mono',monospace; padding:6px 8px; text-align:center; }
+  .edit-apply{ width:100%; margin-top:6px; padding:10px; border-radius:8px; border:none; background:var(--amber); color:#241A06; font-weight:700; cursor:pointer; font-size:12.5px; }
+  .reject-panel .q{ font-size:12px; color:var(--text-dim); margin-bottom:10px; }
+  .reject-opt{ display:block; width:100%; text-align:right; background:var(--panel-3); border:1px solid var(--border); color:var(--text); border-radius:7px; padding:9px 12px; font-size:12px; margin-bottom:7px; cursor:pointer; font-family:inherit; }
+  .reject-opt:hover{ border-color:var(--red); color:var(--red); }
+
+  /* ===== table ===== */
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th{ text-align:right; color:var(--text-dim); font-weight:600; font-size:11.5px; padding:9px 10px; border-bottom:1px solid var(--border-soft); }
+  td{ padding:11px 10px; border-bottom:1px solid var(--border-soft); }
+  tr:last-child td{ border-bottom:none; }
+  tr:hover td{ background:var(--panel-2); }
+  .flight-code{ font-family:'IBM Plex Mono',monospace; color:var(--blue); }
+  .risk-flag{ font-size:11px; padding:3px 9px; border-radius:12px; font-weight:600; }
+  .risk-flag.high{ background:var(--red-dim); color:var(--red); }
+  .risk-flag.low{ background:var(--green-dim); color:var(--green); }
+
+  /* ===== audit log ===== */
+  .log-entry{ display:flex; gap:12px; padding:13px 4px; border-bottom:1px solid var(--border-soft); }
+  .log-entry:last-child{ border-bottom:none; }
+  .log-dot{ width:9px; height:9px; border-radius:50%; margin-top:5px; flex:none; }
+  .log-body{ flex:1; }
+  .log-title{ font-size:13px; font-weight:600; margin-bottom:3px; }
+  .log-meta{ font-size:11px; color:var(--text-dim); }
+  .log-time{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--text-faint); flex:none; direction:ltr; }
+
+  /* ===== settings ===== */
+  .setting-row{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--border-soft); gap:20px; }
+  .setting-row:last-child{ border-bottom:none; }
+  .setting-label{ font-size:13.5px; font-weight:600; }
+  .setting-desc{ font-size:11.5px; color:var(--text-dim); margin-top:3px; }
+  .slider-wrap{ display:flex; align-items:center; gap:10px; min-width:200px; }
+  input[type=range]{ flex:1; accent-color:var(--amber); }
+  .slider-val{ font-family:'IBM Plex Mono',monospace; font-size:12.5px; width:44px; text-align:left; }
+  .toggle{ position:relative; width:42px; height:24px; flex:none; }
+  .toggle input{ opacity:0; width:0; height:0; }
+  .toggle-track{ position:absolute; inset:0; background:var(--panel-3); border:1px solid var(--border); border-radius:14px; cursor:pointer; transition:.2s; }
+  .toggle-track:before{ content:''; position:absolute; width:16px; height:16px; border-radius:50%; background:var(--text-dim); top:2px; right:3px; transition:.2s; }
+  input:checked + .toggle-track{ background:var(--amber-dim); border-color:var(--amber); }
+  input:checked + .toggle-track:before{ transform:translateX(-18px); background:var(--amber); }
+
+  .footnote{ text-align:center; font-size:11px; color:var(--text-faint); padding:18px 0 0; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">م</div>
+      <div>
+        <div class="brand-name">معبر</div>
+        <div class="brand-sub">دعم القرار الاستباقي</div>
+      </div>
+    </div>
+
+    <div class="nav-group-label">المراقبة</div>
+    <div class="nav-item active" data-view="dashboard"><span class="ic">◎</span> نظرة عامة</div>
+    <div class="nav-item" data-view="predictions"><span class="ic">📈</span> التوقعات والتحليل</div>
+
+    <div class="nav-group-label">القرار</div>
+    <div class="nav-item" data-view="recommendation"><span class="ic">⚡</span> التوصية الحالية <span class="badge">1</span></div>
+    <div class="nav-item" data-view="audit"><span class="ic">🗂</span> سجل التدقيق</div>
+
+    <div class="nav-group-label">الإدارة</div>
+    <div class="nav-item" data-view="settings"><span class="ic">⚙</span> إعدادات النظام</div>
+
+    <div class="sidebar-foot">
+      <div class="op-user">
+        <div class="op-avatar">👤</div>
+        <div>
+          <div class="op-name">م. عبدالله الحربي</div>
+          <div class="op-role">مشرف تشغيلي — الوردية 2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="viewTitle">نظرة عامة على صالة الوصول</h1>
+        <div class="sub">صالة الوصول الدولية — بوابة B (الجوازات)</div>
+      </div>
+      <div class="topbar-right">
+        <div class="status-pill"><span class="status-dot"></span> تحذير استباقي</div>
+        <span class="mono" id="clock">02:15 PM</span>
+      </div>
+    </div>
+
+    <div class="view active" id="view-dashboard">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-label">متوسط وقت الانتظار الحالي</div>
+          <div class="kpi-val mono">14 د</div>
+          <div class="kpi-delta up">↑ يتجه للارتفاع خلال 30 د</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">الركاب المتوقعون (الساعة القادمة)</div>
+          <div class="kpi-val mono">1,240</div>
+          <div class="kpi-delta up">↑ +410 من 3 رحلات متقاربة</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">المنافذ النشطة</div>
+          <div class="kpi-val mono">14 / 21</div>
+          <div class="kpi-delta flat">مستقر</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">الموظفون المتاحون احتياطياً</div>
+          <div class="kpi-val mono">6</div>
+          <div class="kpi-delta down">جاهزون للتوجيه الفوري</div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><div class="card-title">الخريطة الحرارية للمنافذ <span>منصات 10–21</span></div></div>
+          <div class="gate-legend">
+            <span><i style="background:var(--green);"></i>طبيعي</span>
+            <span><i style="background:var(--red);"></i>خطر ازدحام</span>
+          </div>
+          <div class="gates" id="gates"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">تنبيه استباقي نشط</div></div>
+          <div class="predict-box" style="margin-top:0;">
+            <div class="predict-ring">
+              <svg width="58" height="58"><circle cx="29" cy="29" r="24" stroke="#1E3143" stroke-width="5" fill="none"></circle>
+                <circle cx="29" cy="29" r="24" stroke="#F2A93B" stroke-width="5" fill="none" stroke-dasharray="151" stroke-dashoffset="151" id="ringProgress" stroke-linecap="round" style="transform:rotate(-90deg); transform-origin:50% 50%;"></circle></svg>
+              <div class="val" id="ringVal">0%</div>
+            </div>
+            <div>
+              <div class="predict-text">توقع ارتفاع حاد في الضغط بنسبة <b>85%</b> خلال 30 دقيقة على منصات 12–15</div>
+              <div class="predict-conf">ثقة النموذج: 91%</div>
+            </div>
+          </div>
+          <button class="btn btn-approve" style="width:100%; margin-top:16px;" onclick="goTo('recommendation')">عرض التوصية الكاملة ⟵</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-predictions">
+      <div class="grid2">
+        <div class="card">
+          <div class="card-head"><div class="card-title">وقت الانتظار المتوقع مقابل الهدف <span>خلال ساعتين القادمتين</span></div></div>
+          <div class="chart-legend">
+            <span><i style="background:var(--amber);"></i>الانتظار المتوقع</span>
+            <span><i style="background:var(--green); opacity:.7; border-top:1px dashed var(--green);"></i>الحد المستهدف (10 د)</span>
+          </div>
+          <svg viewBox="0 0 560 200" style="width:100%; height:auto;" id="chartSvg">
+            <g stroke="#1F2F40" stroke-width="1">
+              <line x1="0" y1="40" x2="560" y2="40"></line>
+              <line x1="0" y1="90" x2="560" y2="90"></line>
+              <line x1="0" y1="140" x2="560" y2="140"></line>
+              <line x1="0" y1="190" x2="560" y2="190"></line>
+            </g>
+            <line x1="0" y1="140" x2="560" y2="140" stroke="#4CAF7D" stroke-width="1.5" stroke-dasharray="4 4" opacity=".6"></line>
+            <path id="predPath" d="" fill="none" stroke="#F2A93B" stroke-width="2.5" stroke-linecap="round"></path>
+            <path id="predFill" d="" fill="url(#gradAmber)" opacity=".18"></path>
+            <defs>
+              <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#F2A93B"></stop>
+                <stop offset="100%" stop-color="#F2A93B" stop-opacity="0"></stop>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div style="display:flex; justify-content:space-between; font-size:10.5px; color:var(--text-faint); font-family:'IBM Plex Mono',monospace; margin-top:2px;">
+            <span>02:00</span><span>02:30</span><span>03:00</span><span>03:30</span><span>04:00</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div class="card-title">السبب الجذري <span>Explainable AI</span></div></div>
+          <div class="cause-row"><div class="num">1</div><div>تزامن وصول رحلتين تحملان معاً <b>410 مسافرين</b> خلال نافذة ضيقة</div></div>
+          <div class="flight-tags"><div class="flight-tag">SV 142</div><div class="flight-tag">XY 711</div></div>
+          <div class="cause-row" style="margin-top:6px;"><div class="num">2</div><div>انخفاض مؤقت في المسارات المفتوحة <b>بمقدار مسارين</b> للصيانة</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">جدول الرحلات القادمة</div></div>
+        <table>
+          <thead><tr><th>الرحلة</th><th>المصدر</th><th>وقت الهبوط</th><th>عدد الركاب</th><th>مستوى الخطورة</th></tr></thead>
+          <tbody>
+            <tr><td class="flight-code">SV 142</td><td>جدة</td><td class="mono">02:22 PM</td><td class="mono">210</td><td><span class="risk-flag high">مرتفع</span></td></tr>
+            <tr><td class="flight-code">XY 711</td><td>دبي</td><td class="mono">02:28 PM</td><td class="mono">200</td><td><span class="risk-flag high">مرتفع</span></td></tr>
+            <tr><td class="flight-code">QR 084</td><td>الدوحة</td><td class="mono">02:45 PM</td><td class="mono">165</td><td><span class="risk-flag low">منخفض</span></td></tr>
+            <tr><td class="flight-code">MS 653</td><td>القاهرة</td><td class="mono">03:10 PM</td><td class="mono">140</td><td><span class="risk-flag low">منخفض</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="view" id="view-recommendation">
+      <div class="reco">
+        <div class="reco-eyebrow">التوصية التشغيلية المقترحة</div>
+        <div class="reco-text">فتح مسارين إضافيين (رقم 16 و17) وتوجيه موظفين احتياطيين ابتداءً من الساعة <span class="mono">02:30 PM</span></div>
+        <div class="reco-time">بُنيت على تفسير الأسباب الجذرية أعلاه</div>
+
+        <div class="whatif">
+          <div class="whatif-row">
+            <div class="whatif-label">بدون تدخل</div>
+            <div class="whatif-bar-track"><div class="whatif-bar" id="barBefore" style="width:0%; background:var(--red);"></div></div>
+            <div class="whatif-val mono" id="valBefore">—</div>
+          </div>
+          <div class="whatif-row">
+            <div class="whatif-label">بعد التوصية</div>
+            <div class="whatif-bar-track"><div class="whatif-bar" id="barAfter" style="width:0%; background:var(--green);"></div></div>
+            <div class="whatif-val mono" id="valAfter">—</div>
+          </div>
+        </div>
+
+        <div class="decisions">
+          <button class="btn btn-approve" onclick="approve()">✔ اعتماد التوصية وتنفيذها</button>
+          <button class="btn btn-edit" onclick="toggleEdit()">⚙ تعديل الإجراء</button>
+          <button class="btn btn-reject" onclick="toggleReject()">✕ رفض التوصية</button>
+        </div>
+
+        <div class="edit-panel" id="editPanel">
+          <div class="edit-field">عدد المسارات الإضافية <input type="number" id="gateCount" value="2" min="1" max="6"></div>
+          <div class="edit-field">وقت بدء التنفيذ <input type="text" id="startTime" value="02:30 PM" class="mono"></div>
+          <button class="edit-apply" onclick="applyEdit()">حفظ وتنفيذ الإجراء المعدّل</button>
+        </div>
+
+        <div class="reject-panel" id="rejectPanel">
+          <div class="q">حدد سبب الرفض لتحسين دقة النموذج مستقبلاً:</div>
+          <button class="reject-opt" onclick="reject('عدم توفر موظفين كافيين حالياً')">عدم توفر موظفين كافيين حالياً</button>
+          <button class="reject-opt" onclick="reject('المسارات المقترحة قيد الصيانة')">المسارات المقترحة قيد الصيانة</button>
+          <button class="reject-opt" onclick="reject('تقدير أن الذروة ستكون أقل من المتوقع')">تقدير أن الذروة ستكون أقل من المتوقع</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-audit">
+      <div class="card">
+        <div class="card-head"><div class="card-title">سجل التدقيق <span>كل القرارات الصادرة عن المشرفين</span></div></div>
+        <div id="auditList">
+          <div class="log-entry">
+            <div class="log-dot" style="background:var(--green);"></div>
+            <div class="log-body">
+              <div class="log-title">اعتماد فتح 3 مسارات إضافية — صالة المغادرة أ</div>
+              <div class="log-meta">م. سارة القحطاني — الوردية 1</div>
+            </div>
+            <div class="log-time">Sep 13, 11:05 AM</div>
+          </div>
+          <div class="log-entry">
+            <div class="log-dot" style="background:var(--red);"></div>
+            <div class="log-body">
+              <div class="log-title">رفض توصية إعادة توزيع موظفين — منفذ الشحن</div>
+              <div class="log-meta">م. خالد المطيري — السبب: عدم توفر موظفين كافيين حالياً</div>
+            </div>
+            <div class="log-time">Sep 13, 09:40 AM</div>
+          </div>
+          <div class="log-entry">
+            <div class="log-dot" style="background:var(--amber);"></div>
+            <div class="log-body">
+              <div class="log-title">تعديل الإجراء: فتح مسار واحد فقط بدل مسارين</div>
+              <div class="log-meta">م. عبدالله الحربي — الوردية 2</div>
+            </div>
+            <div class="log-time">Sep 12, 06:15 PM</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-settings">
+      <div class="card">
+        <div class="card-head"><div class="card-title">حدود التنبيه الاستباقي</div></div>
+        <div class="setting-row">
+          <div><div class="setting-label">نافذة التنبؤ المسبق</div><div class="setting-desc">قبل كم دقيقة يبدأ النظام بالتحذير من ذروة متوقعة</div></div>
+          <div class="slider-wrap"><input type="range" min="10" max="60" value="30" oninput="this.nextElementSibling.textContent=this.value+' د'"><span class="slider-val mono">30 د</span></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">الحد المستهدف لزمن الانتظار</div><div class="setting-desc">أعلى زمن انتظار مقبول قبل تفعيل توصية تشغيلية</div></div>
+          <div class="slider-wrap"><input type="range" min="5" max="25" value="10" oninput="this.nextElementSibling.textContent=this.value+' د'"><span class="slider-val mono">10 د</span></div>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">حد ثقة النموذج لإصدار توصية تلقائية</div><div class="setting-desc">لن تظهر توصيات أقل من هذه النسبة إلا كتنبيه فقط</div></div>
+          <div class="slider-wrap"><input type="range" min="50" max="99" value="85" oninput="this.nextElementSibling.textContent=this.value+'%'"><span class="slider-val mono">85%</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><div class="card-title">قنوات التنبيه</div></div>
+        <div class="setting-row">
+          <div><div class="setting-label">إشعار فوري للمشرف التشغيلي</div><div class="setting-desc">إشعار داخل لوحة التحكم عند رصد ذروة متوقعة</div></div>
+          <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">رسالة نصية لموظفي الاحتياط</div><div class="setting-desc">عند اعتماد توصية تتطلب توجيه موظفين</div></div>
+          <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+        </div>
+        <div class="setting-row">
+          <div><div class="setting-label">تقرير يومي لمدير العمليات</div><div class="setting-desc">ملخص كل التوصيات والقرارات في نهاية كل وردية</div></div>
+          <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="footnote">نموذج أولي تفاعلي لأغراض العرض في الهاكاثون — البيانات محاكاة (Mock Data)</div>
+  </div>
+</div>
+
+<script>
+  const titles = {
+    dashboard:['نظرة عامة على صالة الوصول','صالة الوصول الدولية — بوابة B (الجوازات)'],
+    predictions:['التوقعات والتحليل','تفسير الأسباب وبيانات الرحلات القادمة'],
+    recommendation:['التوصية التشغيلية الحالية','قرار بشري معتمد على تفسير الذكاء الاصطناعي'],
+    audit:['سجل التدقيق','كل قرارات المشرفين موثقة زمنياً'],
+    settings:['إعدادات النظام','ضبط حدود التنبؤ والتنبيهات'],
+  };
+
+  function goTo(view){
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===view));
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+view));
+    document.getElementById('viewTitle').textContent = titles[view][0];
+    document.querySelector('.topbar .sub').textContent = titles[view][1];
+  }
+  document.querySelectorAll('.nav-item').forEach(n=> n.addEventListener('click', ()=> goTo(n.dataset.view)) );
+
+  // gates
+  const gatesEl = document.getElementById('gates');
+  for(let g=10; g<=21; g++){
+    const risky = g>=12 && g<=15;
+    const div = document.createElement('div');
+    div.className = 'gate ' + (risky ? 'risk' : 'ok');
+    div.innerHTML = g + '<small>' + (risky ? 'ازدحام' : 'طبيعي') + '</small>';
+    gatesEl.appendChild(div);
+  }
+
+  function animateNumber(id, from, to, duration, suffix){
+    const el = document.getElementById(id);
+    const start = performance.now();
+    function step(now){
+      const p = Math.min((now-start)/duration, 1);
+      el.textContent = Math.round(from + (to-from)*p) + suffix;
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  // chart data: predicted wait time over 9 points (0..190 x, 0..200 y, inverted)
+  function buildChart(){
+    const pts = [12,13,15,19,24,22,17,13,11]; // minutes
+    const maxY = 28;
+    const w = 560, h=200, pad=6;
+    const stepX = w/(pts.length-1);
+    const coords = pts.map((v,i)=>{
+      const x = i*stepX;
+      const y = pad + (1-(v/maxY))*(h-pad*2-20);
+      return [x,y];
+    });
+    let d = 'M ' + coords.map(c=>c[0]+','+c[1]).join(' L ');
+    document.getElementById('predPath').setAttribute('d', d);
+    let fillD = d + ` L ${w},${h} L 0,${h} Z`;
+    document.getElementById('predFill').setAttribute('d', fillD);
+  }
+
+  window.addEventListener('load', ()=>{
+    buildChart();
+    setTimeout(()=>{
+      document.getElementById('ringProgress').style.transition = 'stroke-dashoffset 1.4s ease';
+      document.getElementById('ringProgress').style.strokeDashoffset = 151 - (151*0.85);
+      animateNumber('ringVal', 0, 85, 1400, '%');
+    }, 250);
+    setTimeout(()=>{
+      document.getElementById('barBefore').style.width = '96%';
+      document.getElementById('barAfter').style.width = '32%';
+      document.getElementById('valBefore').textContent = '24 د';
+      document.getElementById('valAfter').textContent = '8 د';
+    }, 400);
+  });
+
+  function closeAllPanels(){
+    document.getElementById('editPanel').classList.remove('show');
+    document.getElementById('rejectPanel').classList.remove('show');
+  }
+  function prependLog(title, meta, color){
+    const list = document.getElementById('auditList');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+    entry.innerHTML = `<div class="log-dot" style="background:${color};"></div>
+      <div class="log-body"><div class="log-title">${title}</div><div class="log-meta">${meta}</div></div>
+      <div class="log-time">Sep 13, 02:16 PM</div>`;
+    list.prepend(entry);
+    const badge = document.querySelector('.nav-item[data-view="recommendation"] .badge');
+    if(badge) badge.remove();
+  }
+  function approve(){
+    closeAllPanels();
+    prependLog('اعتماد فتح مسارين إضافيين (16، 17) وتوجيه موظفين احتياطيين', 'م. عبدالله الحربي — الوردية 2', 'var(--green)');
+  }
+  function toggleEdit(){ document.getElementById('rejectPanel').classList.remove('show'); document.getElementById('editPanel').classList.toggle('show'); }
+  function applyEdit(){
+    const gates = document.getElementById('gateCount').value;
+    const time = document.getElementById('startTime').value;
+    document.getElementById('editPanel').classList.remove('show');
+    prependLog(`تعديل الإجراء: فتح ${gates} مسارات ابتداءً من ${time}`, 'م. عبدالله الحربي — الوردية 2', 'var(--amber)');
+  }
+  function toggleReject(){ document.getElementById('editPanel').classList.remove('show'); document.getElementById('rejectPanel').classList.toggle('show'); }
+  function reject(reason){
+    document.getElementById('rejectPanel').classList.remove('show');
+    prependLog('رفض التوصية التشغيلية', 'م. عبدالله الحربي — السبب: ' + reason, 'var(--red)');
+  }
+</script>
+</body>
+</html>
